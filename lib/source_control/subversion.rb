@@ -48,6 +48,10 @@ module SourceControl
         rescue EOFError
         end
       end
+      
+      # XXX: Does this break a return cond that is required?
+      # insure svn issues log at least once to cache auth credentials
+      log_init(path) if @username && @password
     end
 
     def last_locally_known_revision
@@ -110,6 +114,14 @@ module SourceControl
     def log(from, to, arguments = [])
       svn('log', arguments + ["--revision", "#{from}:#{to}", '--verbose', '--xml', @repository],
           :execute_in_project_directory => @repository.blank?)
+    end
+    
+    def log_init(path)
+      # svn --non-interactive log --limit 1 --revision HEAD:1 --verbose --xml
+      command = [ 'svn', '--non-interactive', 'log', '--username', @username, 
+                  '--password', @password, '--revision', 'HEAD:1', 
+                  '--verbose', '--xml' ]
+      execute_in_local_copy(command, {})
     end
 
     def info
